@@ -6,25 +6,45 @@ import threading
 import os
 import sys
 
-# Modern Color Palette (Flat UI)
-COLORS = {
-    'bg': '#2c3e50',        # Dark Blue-Grey Background
-    'sidebar': '#34495e',   # Slightly lighter sidebar
-    'text': '#ecf0f1',      # White-ish text
-    'accent': '#e74c3c',    # Red accent
-    'button': '#2980b9',    # Blue buttons
-    'button_hover': '#3498db',
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+# === Minimalist Light Theme Palette ===
+THEME = {
+    'window_bg': '#f9fafb',      # Off-white background
+    'sidebar_bg': '#ffffff',     # Pure white sidebar
+    'content_bg': '#f3f4f6',     # Light gray for content area
     
-    # Game Elements
-    'wall': '#34495e',      # Dark Slate
-    'floor': '#ecf0f1',     # Light Grey
-    'target': '#e74c3c',    # Red Target
-    'box': '#d35400',       # Pumpkin/Brown Box
-    'box_inner': '#e67e22', # Lighter Box Face
-    'box_done': '#27ae60',  # Green Box (Success)
-    'box_done_in': '#2ecc71',
-    'player': '#2980b9',    # Blue Player
-    'player_head': '#3498db'
+    'text_primary': '#1f2937',   # Dark gray (almost black)
+    'text_secondary': '#6b7280', # Medium gray
+    'border': '#e5e7eb',         # Very light border
+    
+    'primary_btn': '#3b82f6',    # Soft Blue
+    'primary_btn_hover': '#2563eb',
+    
+    'control_btn': '#ffffff',    # White buttons
+    'control_btn_text': '#374151',
+    'control_btn_hover': '#f3f4f6',
+
+    # Game Elements (Pastel/Soft tones)
+    'g_floor': '#ffffff',
+    'g_wall': '#9ca3af',         # Soft Gray
+    'g_wall_border': '#6b7280',
+    'g_target': '#fecaca',       # Soft Red/Pink
+    'g_target_dot': '#ef4444',   # Red dot
+    'g_box': '#fcd34d',          # Soft Yellow/Wood
+    'g_box_border': '#d97706',
+    'g_box_done': '#86efac',     # Soft Green
+    'g_box_done_border': '#16a34a',
+    'g_player': '#60a5fa',       # Soft Blue
+    'g_player_border': '#2563eb'
 }
 
 TILE_SIZE = 50
@@ -32,125 +52,174 @@ TILE_SIZE = 50
 class SokobanGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Sokoban Solver AI")
-        self.root.configure(bg=COLORS['bg'])
-        
-        # Set window icon if available (skip for now to avoid errors)
+        self.root.title("Sokoban Solver Pro")
+        self.root.configure(bg=THEME['window_bg'])
         
         # Style Configuration
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Configure custom styles
-        self.style.configure('TFrame', background=COLORS['bg'])
-        self.style.configure('Sidebar.TFrame', background=COLORS['sidebar'], relief='flat')
-        self.style.configure('TLabel', background=COLORS['sidebar'], foreground=COLORS['text'], font=('Segoe UI', 10))
-        self.style.configure('Header.TLabel', background=COLORS['sidebar'], foreground=COLORS['accent'], font=('Segoe UI', 14, 'bold'))
-        self.style.configure('Status.TLabel', background=COLORS['bg'], foreground='#95a5a6', font=('Consolas', 9))
+        # General Styles
+        self.style.configure('TFrame', background=THEME['sidebar_bg'])
+        self.style.configure('Content.TFrame', background=THEME['content_bg'])
         
-        # Button Styles
-        self.style.configure('TButton', font=('Segoe UI', 10, 'bold'), borderwidth=0, focuscolor='none')
-        self.style.map('TButton', background=[('active', COLORS['button_hover'])], foreground=[('active', 'white')])
+        self.style.configure('TLabel', background=THEME['sidebar_bg'], foreground=THEME['text_primary'], font=('Segoe UI', 10))
+        self.style.configure('Header.TLabel', background=THEME['sidebar_bg'], foreground=THEME['text_primary'], font=('Segoe UI', 16, 'bold'))
+        self.style.configure('SubHeader.TLabel', background=THEME['sidebar_bg'], foreground=THEME['text_secondary'], font=('Segoe UI', 9, 'bold'))
         
-        # Radio Button Styles
-        self.style.configure('TRadiobutton', background=COLORS['sidebar'], foreground=COLORS['text'], font=('Segoe UI', 10))
-        self.style.map('TRadiobutton', background=[('active', COLORS['sidebar'])])
+        # Radio Buttons
+        self.style.configure('TRadiobutton', background=THEME['sidebar_bg'], foreground=THEME['text_primary'], font=('Segoe UI', 10))
+        self.style.map('TRadiobutton', background=[('active', THEME['sidebar_bg'])])
+        
+        # Separator
+        self.style.configure('TSeparator', background=THEME['border'])
 
-        # === Main Layout (Sidebar + Main Content) ===
-        self.main_container = ttk.Frame(root)
+        # === Main Layout ===
+        self.main_container = tk.Frame(root, bg=THEME['window_bg'])
         self.main_container.pack(fill="both", expand=True)
 
-        # --- Left Sidebar (Controls) ---
-        self.sidebar = ttk.Frame(self.main_container, style='Sidebar.TFrame', padding=20)
+        # --- Sidebar (Left) ---
+        self.sidebar = tk.Frame(self.main_container, bg=THEME['sidebar_bg'], width=280, padx=25, pady=25)
         self.sidebar.pack(side="left", fill="y")
-        
-        # Title
-        ttk.Label(self.sidebar, text="SOKOBAN\nSOLVER", style='Header.TLabel', justify="center").pack(pady=(0, 20))
+        # Add right border to sidebar
+        tk.Frame(self.main_container, bg=THEME['border'], width=1).pack(side="left", fill="y")
 
-        # File Selection Section
-        self._create_section_label("Map Configuration")
+        # Header
+        ttk.Label(self.sidebar, text="Sokoban Solver", style='Header.TLabel').pack(anchor="w", pady=(0, 5))
+        ttk.Label(self.sidebar, text="Automatic Path Finder", style='TLabel', foreground=THEME['text_secondary']).pack(anchor="w", pady=(0, 30))
+
+        # 1. Map Selection
+        self._create_section_header("GAME MAP")
+        
+        self.file_frame = tk.Frame(self.sidebar, bg=THEME['sidebar_bg'])
+        self.file_frame.pack(fill="x", pady=(5, 15))
+        
         self.file_path_var = tk.StringVar()
-        self.file_entry = tk.Entry(self.sidebar, textvariable=self.file_path_var, bg="#ecf0f1", fg="#2c3e50", relief="flat", font=('Segoe UI', 9))
-        self.file_entry.pack(fill="x", pady=(5, 5), ipady=3)
-        ttk.Button(self.sidebar, text="📂 Browse Map", command=self.browse_file).pack(fill="x", pady=(0, 15))
+        self.file_entry = tk.Entry(self.file_frame, textvariable=self.file_path_var, 
+                                   bg=THEME['window_bg'], fg=THEME['text_primary'], 
+                                   relief="flat", highlightthickness=1, highlightbackground=THEME['border'],
+                                   font=('Segoe UI', 9))
+        self.file_entry.pack(side="left", fill="x", expand=True, ipady=5, padx=(0, 5))
+        
+        self.browse_btn = tk.Button(self.file_frame, text="...", command=self.browse_file,
+                                    bg=THEME['control_btn'], fg=THEME['text_primary'],
+                                    relief="flat", bd=0, highlightthickness=1, highlightbackground=THEME['border'],
+                                    width=3, cursor="hand2")
+        self.browse_btn.pack(side="right", ipady=2)
 
-        # Algorithm Section
-        self._create_section_label("Algorithm")
+        # 2. Algorithm Selection
+        self._create_section_header("ALGORITHM")
         self.algo_var = tk.IntVar(value=0)
-        ttk.Radiobutton(self.sidebar, text="A* (Optimal)", variable=self.algo_var, value=0).pack(anchor="w", pady=2)
-        ttk.Radiobutton(self.sidebar, text="DFS (Deep)", variable=self.algo_var, value=1).pack(anchor="w", pady=2)
-        ttk.Radiobutton(self.sidebar, text="BFS (Fast)", variable=self.algo_var, value=2).pack(anchor="w", pady=2)
         
-        # Memory Section
-        ttk.Label(self.sidebar, text="Memory (MB):", style='TLabel').pack(anchor="w", pady=(15, 5))
+        self.algo_frame = tk.Frame(self.sidebar, bg=THEME['sidebar_bg'])
+        self.algo_frame.pack(fill="x", pady=5)
+        
+        self._create_radio_btn("A* Search (Optimal)", 0)
+        self._create_radio_btn("DFS (Deep Search)", 1)
+        self._create_radio_btn("BFS (Breadth First)", 2)
+        
+        # 3. Memory
+        tk.Frame(self.sidebar, bg=THEME['sidebar_bg'], height=15).pack() # Spacer
+        self._create_section_header("MEMORY LIMIT (MB)")
         self.mem_var = tk.StringVar(value="100")
-        tk.Entry(self.sidebar, textvariable=self.mem_var, bg="#ecf0f1", fg="#2c3e50", width=10, relief="flat", font=('Segoe UI', 9)).pack(anchor="w", ipady=2)
+        self.mem_entry = tk.Entry(self.sidebar, textvariable=self.mem_var,
+                                  bg=THEME['window_bg'], fg=THEME['text_primary'],
+                                  relief="flat", highlightthickness=1, highlightbackground=THEME['border'],
+                                  font=('Segoe UI', 9))
+        self.mem_entry.pack(fill="x", pady=(5, 20), ipady=5)
 
-        # Solve Button
-        self.run_btn = tk.Button(self.sidebar, text="⚡ CALCULATE SOLUTION", command=self.run_solver, 
-                                 bg=COLORS['accent'], fg="white", font=('Segoe UI', 11, 'bold'), 
-                                 relief="flat", cursor="hand2", activebackground="#c0392b", activeforeground="white")
-        self.run_btn.pack(fill="x", pady=(30, 10), ipady=8)
-
-        # Progress / Status in Sidebar
-        self.status_var = tk.StringVar(value="Ready")
-        ttk.Label(self.sidebar, textvariable=self.status_var, style='Status.TLabel', wraplength=180).pack(fill="x", pady=10)
-
-        # --- Right Area (Canvas + Playback) ---
-        self.right_panel = tk.Frame(self.main_container, bg=COLORS['bg'])
-        self.right_panel.pack(side="right", fill="both", expand=True, padx=20, pady=20)
-
-        # Canvas Frame (for centering)
-        self.canvas_container = tk.Frame(self.right_panel, bg=COLORS['bg'], bd=2, relief="flat")
-        self.canvas_container.pack(fill="both", expand=True)
+        # Calculate Button
+        self.run_btn = tk.Button(self.sidebar, text="Calculate Solution", command=self.run_solver, 
+                                 bg=THEME['primary_btn'], fg="white", 
+                                 font=('Segoe UI', 10, 'bold'),
+                                 relief="flat", bd=0, cursor="hand2", 
+                                 activebackground=THEME['primary_btn_hover'], activeforeground="white")
+        self.run_btn.pack(fill="x", pady=(10, 20), ipady=10)
         
-        self.canvas = tk.Canvas(self.canvas_container, bg=COLORS['floor'], highlightthickness=0)
-        self.canvas.pack(expand=True) # Center in container
+        # Status
+        self.status_var = tk.StringVar(value="Ready to solve")
+        self.status_lbl = tk.Label(self.sidebar, textvariable=self.status_var, 
+                                   bg=THEME['sidebar_bg'], fg=THEME['text_secondary'], 
+                                   font=('Segoe UI', 9), anchor="w", justify="left")
+        self.status_lbl.pack(fill="x", side="bottom")
 
-        # Playback Controls Bar
-        self.controls_frame = tk.Frame(self.right_panel, bg=COLORS['bg'], pady=15)
-        self.controls_frame.pack(fill="x", side="bottom")
-
-        # Center the buttons
-        self.btn_container = tk.Frame(self.controls_frame, bg=COLORS['bg'])
-        self.btn_container.pack()
-
-        # Custom Control Buttons
-        self._create_control_btn("⏮", self.go_start)
-        self._create_control_btn("◀", self.go_prev)
-        self.play_btn = tk.Button(self.btn_container, text="▶ PLAY", command=self.toggle_play, 
-                                  bg=COLORS['button'], fg="white", font=('Segoe UI', 10, 'bold'), width=10,
-                                  relief="flat", cursor="hand2")
-        self.play_btn.pack(side="left", padx=5)
-        self._create_control_btn("▶", self.go_next)
-        self._create_control_btn("⏭", self.go_end)
+        # --- Content Area (Right) ---
+        self.content_area = tk.Frame(self.main_container, bg=THEME['content_bg'])
+        self.content_area.pack(side="right", fill="both", expand=True, padx=30, pady=30)
         
-        self.step_label = tk.Label(self.controls_frame, text="Step: 0 / 0", bg=COLORS['bg'], fg="#95a5a6", font=('Consolas', 12))
-        self.step_label.pack(side="right")
+        # Card-like container for canvas
+        self.canvas_card = tk.Frame(self.content_area, bg="white", bd=0, padx=10, pady=10)
+        self.canvas_card.pack(fill="both", expand=True)
+        # Add subtle shadow effect using a bottom border frame? (Simulated)
+        # Using simple white card for now.
+        
+        self.canvas = tk.Canvas(self.canvas_card, bg="white", highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
 
-        # Logic Variables
+        # Control Bar (Floating above bottom or separate?)
+        self.controls_frame = tk.Frame(self.content_area, bg=THEME['content_bg'], pady=20)
+        self.controls_frame.pack(fill="x")
+        
+        # Center controls
+        self.ctrl_center = tk.Frame(self.controls_frame, bg=THEME['content_bg'])
+        self.ctrl_center.pack()
+
+        # Step Counter
+        self.step_label = tk.Label(self.ctrl_center, text="Step 0 / 0", 
+                                   bg=THEME['content_bg'], fg=THEME['text_secondary'], 
+                                   font=('Segoe UI', 11))
+        self.step_label.pack(side="top", pady=(0, 10))
+
+        # Buttons Row
+        self.btn_row = tk.Frame(self.ctrl_center, bg=THEME['content_bg'])
+        self.btn_row.pack()
+
+        self._create_player_btn("First", self.go_start)
+        self._create_player_btn("Prev", self.go_prev)
+        
+        self.play_btn = tk.Button(self.btn_row, text="Play", command=self.toggle_play,
+                                  bg=THEME['control_btn'], fg=THEME['primary_btn'],
+                                  font=('Segoe UI', 10, 'bold'), width=10,
+                                  relief="flat", highlightthickness=1, highlightbackground=THEME['border'],
+                                  cursor="hand2")
+        self.play_btn.pack(side="left", padx=8)
+        
+        self._create_player_btn("Next", self.go_next)
+        self._create_player_btn("Last", self.go_end)
+
+        # Logic
         self.solution_steps = []
         self.current_step = 0
         self.is_playing = False
         self.play_job = None
-
-        # Set default file
-        default_file = os.path.join("automatic-sokoban-solver-master", "box.txt")
-        if os.path.exists(default_file):
-            self.file_path_var.set(os.path.abspath(default_file))
-            
-        # Initial draw (empty board or placeholder)
-        self.canvas.create_text(200, 200, text="Load a map to start", fill=COLORS['wall'], font=('Segoe UI', 14))
-
-    def _create_section_label(self, text):
-        lbl = ttk.Label(self.sidebar, text=text.upper(), style='TLabel', font=('Segoe UI', 8, 'bold'))
-        lbl.pack(anchor="w", pady=(15, 5))
         
-    def _create_control_btn(self, text, cmd):
-        btn = tk.Button(self.btn_container, text=text, command=cmd, 
-                        bg="#34495e", fg="white", font=('Segoe UI', 12), width=4,
-                        relief="flat", cursor="hand2", activebackground=COLORS['button'])
-        btn.pack(side="left", padx=2)
+        # Set default file
+        # Check bundled location first, then dev location
+        bundled_box = resource_path(os.path.join("automatic-sokoban-solver-master", "box.txt"))
+        dev_box = os.path.join("automatic-sokoban-solver-master", "box.txt")
+        
+        if os.path.exists(bundled_box):
+             self.file_path_var.set(os.path.abspath(bundled_box))
+        elif os.path.exists(dev_box):
+             self.file_path_var.set(os.path.abspath(dev_box))
+        
+        # Initial text
+        self.canvas.create_text(300, 200, text="Please load a map and solve", fill=THEME['text_secondary'], font=('Segoe UI', 12))
+
+    def _create_section_header(self, text):
+        ttk.Label(self.sidebar, text=text, style='SubHeader.TLabel').pack(anchor="w", pady=(0, 5))
+
+    def _create_radio_btn(self, text, val):
+        ttk.Radiobutton(self.algo_frame, text=text, variable=self.algo_var, value=val).pack(anchor="w", pady=3)
+
+    def _create_player_btn(self, text, cmd):
+        btn = tk.Button(self.btn_row, text=text, command=cmd,
+                        bg=THEME['control_btn'], fg=THEME['control_btn_text'],
+                        activebackground=THEME['control_btn_hover'],
+                        font=('Segoe UI', 9), relief="flat", 
+                        highlightthickness=1, highlightbackground=THEME['border'],
+                        width=6, cursor="hand2")
+        btn.pack(side="left", padx=4)
 
     def browse_file(self):
         filename = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")])
@@ -170,19 +239,23 @@ class SokobanGUI:
             messagebox.showerror("Error", "Invalid memory value.")
             return
             
-        self.run_btn.config(state="disabled", text="Computing...", bg="#7f8c8d")
-        self.status_var.set("Engine is thinking...")
+        self.run_btn.config(state="disabled", text="Thinking...", bg=THEME['text_secondary'])
+        self.status_var.set("Engine is computing solution...")
         
         threading.Thread(target=self._execute_solver, args=(algo, mem, filename)).start()
 
     def _execute_solver(self, algo, mem, filename):
-        exe_path = "sokoban_solver.exe"
+        # Look for solver in resource path (bundled) or current dir
+        exe_name = "sokoban_solver.exe"
+        exe_path = resource_path(exe_name)
+        
         if not os.path.exists(exe_path):
-            if os.path.exists("./sokoban_solver.exe"):
-                exe_path = "./sokoban_solver.exe"
-            else:
-                self.root.after(0, lambda: self._on_solver_error("Executable 'sokoban_solver.exe' not found."))
-                return
+             # Fallback to local dir if resource_path returned temp but exe is in CWD (dev mode)
+             if os.path.exists(exe_name):
+                 exe_path = os.path.abspath(exe_name)
+             else:
+                 self.root.after(0, lambda: self._on_solver_error("Executable 'sokoban_solver.exe' not found."))
+                 return
 
         cmd = [exe_path, str(algo), str(mem), filename]
         
@@ -212,7 +285,7 @@ class SokobanGUI:
             self.root.after(0, lambda: self._on_solver_error(str(e)))
 
     def _on_solver_error(self, msg):
-        self.run_btn.config(state="normal", text="⚡ CALCULATE SOLUTION", bg=COLORS['accent'])
+        self.run_btn.config(state="normal", text="Calculate Solution", bg=THEME['primary_btn'])
         self.status_var.set("Error Occurred")
         messagebox.showerror("Solver Error", msg)
 
@@ -224,7 +297,7 @@ class SokobanGUI:
             end_idx = output.find(end_marker)
             
             if start_idx == -1 or end_idx == -1:
-                self._on_solver_error("No solution found or invalid output.")
+                self._on_solver_error("No solution found.")
                 return
 
             json_str = output[start_idx + len(start_marker):end_idx].strip()
@@ -232,8 +305,8 @@ class SokobanGUI:
             
             self.solution_steps = data
             self.current_step = 0
-            self.status_var.set(f"Solution Found! Steps: {len(self.solution_steps)}")
-            self.run_btn.config(state="normal", text="⚡ CALCULATE SOLUTION", bg=COLORS['accent'])
+            self.status_var.set(f"Solved! Total steps: {len(self.solution_steps)}")
+            self.run_btn.config(state="normal", text="Calculate Solution", bg=THEME['primary_btn'])
             
             self.update_canvas()
             
@@ -248,84 +321,63 @@ class SokobanGUI:
         rows = len(matrix)
         cols = len(matrix[0]) if rows > 0 else 0
         
-        # Calculate dynamic tile size
         cw = self.canvas.winfo_width()
         ch = self.canvas.winfo_height()
         
-        # Add some margin
-        draw_w = cw - 20
-        draw_h = ch - 20
+        draw_w = cw - 40
+        draw_h = ch - 40
         
         if cols > 0 and rows > 0:
             ts = min(draw_w / cols, draw_h / rows, 60)
-            ts = max(ts, 15) # Minimum size
+            ts = max(ts, 20)
         else:
             ts = TILE_SIZE
 
-        # Center the board
+        # Center board
         board_w = cols * ts
         board_h = rows * ts
-        offset_x = (cw - board_w) / 2
-        offset_y = (ch - board_h) / 2
-
-        # Draw Grid Background
-        self.canvas.create_rectangle(offset_x, offset_y, offset_x+board_w, offset_y+board_h, fill=COLORS['floor'], outline="")
+        ox = (cw - board_w) / 2
+        oy = (ch - board_h) / 2
 
         for r in range(rows):
             for c in range(cols):
                 val = matrix[r][c]
-                x1 = offset_x + c * ts
-                y1 = offset_y + r * ts
+                x1 = ox + c * ts
+                y1 = oy + r * ts
                 x2 = x1 + ts
                 y2 = y1 + ts
                 
                 # Enum: WALL=0, FINAL=1, BLANK=2, BOX=3, REDBOX=4, PERSON=5, PERSONF=6
                 
-                # 1. Draw Floor Details (Targets)
-                if val in [1, 4, 6]: # Final, RedBox, PersonF
-                    # Draw target marker
+                # 1. Background (Floor)
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=THEME['g_floor'], outline=THEME['border'], width=1)
+                
+                # 2. Target (Final/RedBox/PersonF)
+                if val in [1, 4, 6]:
                     m = ts * 0.35
-                    self.canvas.create_oval(x1+m, y1+m, x2-m, y2-m, fill=COLORS['target'], outline="")
-                
-                # 2. Draw Objects
-                if val == 0: # WALL
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS['wall'], outline=COLORS['bg'], width=1)
-                    # Add subtle detail to wall
-                    self.canvas.create_rectangle(x1+2, y1+2, x2-2, y2-2, fill="", outline="#465b6e", width=1)
-                
-                elif val == 3 or val == 4: # BOX or REDBOX
-                    # Box Color
-                    c_fill = COLORS['box_done'] if val == 4 else COLORS['box']
-                    c_inner = COLORS['box_done_in'] if val == 4 else COLORS['box_inner']
+                    self.canvas.create_oval(x1+m, y1+m, x2-m, y2-m, fill=THEME['g_target_dot'], outline="")
+
+                # 3. Objects
+                if val == 0: # Wall
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=THEME['g_wall'], outline=THEME['g_wall_border'], width=0)
                     
-                    # Main crate
-                    gap = ts * 0.05
-                    self.canvas.create_rectangle(x1+gap, y1+gap, x2-gap, y2-gap, fill=c_fill, outline="#7f8c8d", width=1)
+                elif val == 3 or val == 4: # Box
+                    b_color = THEME['g_box_done'] if val == 4 else THEME['g_box']
+                    b_border = THEME['g_box_done_border'] if val == 4 else THEME['g_box_border']
                     
-                    # Inner "wood" detail
-                    igap = ts * 0.15
-                    self.canvas.create_rectangle(x1+igap, y1+igap, x2-igap, y2-igap, fill=c_inner, outline=c_fill, width=1)
+                    gap = ts * 0.1
+                    self.canvas.create_rectangle(x1+gap, y1+gap, x2-gap, y2-gap, 
+                                                 fill=b_color, outline=b_border, width=2)
                     
-                    # Diagonal cross
-                    self.canvas.create_line(x1+igap, y1+igap, x2-igap, y2-igap, fill=c_fill, width=2)
-                    self.canvas.create_line(x2-igap, y1+igap, x1+igap, y2-igap, fill=c_fill, width=2)
-                    
-                elif val == 5 or val == 6: # PERSON or PERSONF
-                    # Draw Person (Simple body + head)
-                    margin = ts * 0.2
-                    
-                    # Body
-                    self.canvas.create_arc(x1+margin, y1+ts*0.4, x2-margin, y2-ts*0.1, start=0, extent=180, fill=COLORS['player'], outline="")
-                    # Head
-                    head_r = ts * 0.15
-                    cx = x1 + ts/2
-                    cy = y1 + ts*0.35
-                    self.canvas.create_oval(cx-head_r, cy-head_r, cx+head_r, cy+head_r, fill=COLORS['player_head'], outline="")
+                elif val == 5 or val == 6: # Player
+                    p_gap = ts * 0.15
+                    self.canvas.create_oval(x1+p_gap, y1+p_gap, x2-p_gap, y2-p_gap, 
+                                            fill=THEME['g_player'], outline=THEME['g_player_border'], width=2)
 
     def update_canvas(self):
         if 0 <= self.current_step < len(self.solution_steps):
             self.draw_board(self.solution_steps[self.current_step])
-            self.step_label.config(text=f"STEP: {self.current_step + 1} / {len(self.solution_steps)}")
+            self.step_label.config(text=f"Step {self.current_step + 1} / {len(self.solution_steps)}")
 
     def go_start(self):
         self.stop_play()
@@ -353,12 +405,12 @@ class SokobanGUI:
             self.stop_play()
         else:
             self.is_playing = True
-            self.play_btn.config(text="⏸ PAUSE", bg="#f39c12") # Orange for pause
+            self.play_btn.config(text="Pause", fg="#e11d48") # Rose color for pause
             self.play_step()
 
     def stop_play(self):
         self.is_playing = False
-        self.play_btn.config(text="▶ PLAY", bg=COLORS['button'])
+        self.play_btn.config(text="Play", fg=THEME['primary_btn'])
         if self.play_job:
             self.root.after_cancel(self.play_job)
             self.play_job = None
@@ -366,16 +418,14 @@ class SokobanGUI:
     def play_step(self):
         if self.is_playing and self.current_step < len(self.solution_steps) - 1:
             self.go_next()
-            # Loop again
             if self.current_step < len(self.solution_steps) - 1:
-                self.play_job = self.root.after(150, self.play_step) # 150ms delay for smoother anim
+                self.play_job = self.root.after(150, self.play_step)
             else:
                 self.stop_play()
 
 if __name__ == "__main__":
     root = tk.Tk()
     root.geometry("1000x700")
-    # Try to center window
     try:
         screen_width = root.winfo_screenwidth()
         screen_height = root.winfo_screenheight()
