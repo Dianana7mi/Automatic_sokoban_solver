@@ -303,6 +303,10 @@ class SokobanGUI:
             json_str = output[start_idx + len(start_marker):end_idx].strip()
             data = json.loads(json_str)
             
+            if isinstance(data, dict) and "error" in data:
+                self._on_solver_error(data["error"])
+                return
+            
             self.solution_steps = data
             self.current_step = 0
             self.status_var.set(f"Solved! Total steps: {len(self.solution_steps)}")

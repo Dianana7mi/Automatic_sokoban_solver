@@ -61,34 +61,41 @@ int main(int argc, char* argv[]) {
         if (argc >= 4) filename = argv[3];
         
         read_file(mm, nn, temp, filename);
-        game_solver ga(temp, mm, nn, mem);
-        auto ss = ga.test_template(algo);
         
-        draw_picture d;
-        auto full_path = d.get_complete(ss);
-        std::reverse(full_path.begin(), full_path.end());
-        
-        std::cout << "---JSON_START---" << std::endl;
-        std::cout << "[" << std::endl;
-        for (size_t k = 0; k < full_path.size(); ++k) {
-             auto mat = full_path[k].get_matrix2();
-             std::cout << "  [" << std::endl;
-             for (size_t r = 0; r < mat.size(); ++r) {
-                 std::cout << "    [";
-                 for (size_t c_idx = 0; c_idx < mat[r].size(); ++c_idx) {
-                     std::cout << (int)mat[r][c_idx];
-                     if (c_idx < mat[r].size() - 1) std::cout << ", ";
+        try {
+            game_solver ga(temp, mm, nn, mem);
+            auto ss = ga.test_template(algo);
+            
+            draw_picture d;
+            auto full_path = d.get_complete(ss);
+            std::reverse(full_path.begin(), full_path.end());
+            
+            std::cout << "---JSON_START---" << std::endl;
+            std::cout << "[" << std::endl;
+            for (size_t k = 0; k < full_path.size(); ++k) {
+                 auto mat = full_path[k].get_matrix2();
+                 std::cout << "  [" << std::endl;
+                 for (size_t r = 0; r < mat.size(); ++r) {
+                     std::cout << "    [";
+                     for (size_t c_idx = 0; c_idx < mat[r].size(); ++c_idx) {
+                         std::cout << (int)mat[r][c_idx];
+                         if (c_idx < mat[r].size() - 1) std::cout << ", ";
+                     }
+                     std::cout << "]";
+                     if (r < mat.size() - 1) std::cout << ",";
+                     std::cout << std::endl;
                  }
-                 std::cout << "]";
-                 if (r < mat.size() - 1) std::cout << ",";
+                 std::cout << "  ]";
+                 if (k < full_path.size() - 1) std::cout << ",";
                  std::cout << std::endl;
-             }
-             std::cout << "  ]";
-             if (k < full_path.size() - 1) std::cout << ",";
-             std::cout << std::endl;
+            }
+            std::cout << "]" << std::endl;
+            std::cout << "---JSON_END---" << std::endl;
+        } catch (const std::bad_alloc&) {
+            std::cout << "---JSON_START---" << std::endl;
+            std::cout << "{\"error\": \"Memory Limit Exceeded! Try increasing the memory limit.\"}" << std::endl;
+            std::cout << "---JSON_END---" << std::endl;
         }
-        std::cout << "]" << std::endl;
-        std::cout << "---JSON_END---" << std::endl;
         return 0;
     }
 
