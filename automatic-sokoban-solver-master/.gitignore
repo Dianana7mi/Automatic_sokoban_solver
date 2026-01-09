@@ -11,10 +11,9 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 
-# 编辑器/IDE 配置（可选，建议忽略本地配置）
+# 编辑器/IDE 配置
 .vscode/
-.idea/
 .DS_Store
 
-# 运行产生的临时数据
-log.txt
+# 运行产生的临时文件
+*.log
